@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bead Studio</title>
+<style>body{background:#101319;color:#f0f3f9;font:16px system-ui;padding:36px}a{color:#b5c9ff}</style></head>
+<body><h1>Bead Studio</h1><p id="status">Opening your editor…</p>
+<script>
+'use strict';
+async function unzipApp(buffer){
+  const view=new DataView(buffer),bytes=new Uint8Array(buffer);
+  let end=bytes.length-22;
+  while(end>=Math.max(0,bytes.length-65557)&&view.getUint32(end,true)!==0x06054b50)end--;
+  if(end<0)throw Error('The app archive is invalid.');
+  const count=view.getUint16(end+10,true);let pos=view.getUint32(end+16,true);
+  const decoder=new TextDecoder();
+  for(let i=0;i<count;i++){
+    if(view.getUint32(pos,true)!==0x02014b50)throw Error('Invalid archive directory.');
+    const method=view.getUint16(pos+10,true),size=view.getUint32(pos+20,true),expected=view.getUint32(pos+24,true);
+    const nameLength=view.getUint16(pos+28,true),extra=view.getUint16(pos+30,true),comment=view.getUint16(pos+32,true);
+    const name=decoder.decode(bytes.slice(pos+46,pos+46+nameLength));
+    if(name==='Bead-Studio-V8.html'){
+      const local=view.getUint32(pos+42,true);
+      if(view.getUint32(local,true)!==0x04034b50)throw Error('Invalid archive entry.');
+      const start=local+30+view.getUint16(local+26,true)+view.getUint16(local+28,true);
+      let result=bytes.slice(start,start+size);
+      if(method===8){
+        const stream=new Blob([result]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        result=new Uint8Array(await new Response(stream).arrayBuffer());
+      }else if(method!==0)throw Error('Unsupported archive format.');
+      if(result.length!==expected)throw Error('The app download was incomplete.');
+      return decoder.decode(result);
+    }
+    pos+=46+nameLength+extra+comment;
+  }
+  throw Error('The editor was not found in the archive.');
+}
+(async()=>{
+  try{
+    const response=await fetch('./Bead-Studio-V8.zip',{cache:'no-cache'});
+    if(!response.ok)throw Error('Could not download the editor ('+response.status+').');
+    const html=await unzipApp(await response.arrayBuffer());
+    document.open();document.write(html);document.close();
+  }catch(error){
+    document.getElementById('status').textContent='Could not open the editor: '+error.message+' Try refreshing in an up-to-date browser.';
+  }
+})();
+</script></body></html>
+
