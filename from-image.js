@@ -26,7 +26,7 @@ function beadOccupiedBounds(grid){let left=Infinity,top=Infinity,right=-1,bottom
 (()=>{
  let hoveredColour=null;
  const hoverDraw=draw;draw=function(){const result=hoverDraw.apply(this,arguments);if(hoveredColour!==null){const size=Number($('zoom').value);for(let y=0;y<state.height;y++)for(let x=0;x<state.width;x++){const v=state.grid[y][x],match=v!==null&&state.palette[v].hama===hoveredColour;if(!match){ctx.fillStyle='rgba(255,255,255,.72)';ctx.fillRect(x*size,y*size,size,size);}else if(size>=3){ctx.strokeStyle='#f2ad00';ctx.lineWidth=Math.min(2,size/3);ctx.strokeRect(x*size+1,y*size+1,Math.max(0,size-2),Math.max(0,size-2));}}}return result;};
- function hoverCode(target){const swatch=target.closest('.swatch');if(swatch&&$('palette').contains(swatch)){const index=Array.from($('palette').children).indexOf(swatch);return state.palette[index]?.hama||null;}const hama=target.closest('[data-hama]');return hama?hama.dataset.hama:null;}
+ function hoverCode(target){const swatch=target.closest('.swatch');if(swatch&&$('palette').contains(swatch)){const index=Number(swatch.dataset.paletteIndex);return state.palette[index]?.hama||null;}const hama=target.closest('[data-hama]');return hama?hama.dataset.hama:null;}
  document.addEventListener('pointerover',e=>{const code=hoverCode(e.target);if(code!==hoveredColour){hoveredColour=code;draw();}});
  document.addEventListener('pointerout',e=>{if(hoveredColour!==null&&(!e.relatedTarget||hoverCode(e.relatedTarget)!==hoveredColour)){hoveredColour=null;draw();}});
  window.addEventListener('blur',()=>{if(hoveredColour!==null){hoveredColour=null;draw();}});
@@ -34,6 +34,7 @@ function beadOccupiedBounds(grid){let left=Infinity,top=Infinity,right=-1,bottom
  fit=function(){const v=$('viewport');$('zoom').value=Math.max(.5,Math.min(40,Math.floor(Math.min((v.clientWidth-52)/state.width,(v.clientHeight-52)/state.height)*2)/2));draw();};
  $('fit').onclick=fit;
  const style=document.createElement('style');style.textContent='#referenceImage{min-width:0!important}';document.head.append(style);
+ const previousPaletteUI=paletteUI;paletteUI=function(){const result=previousPaletteUI.apply(this,arguments);const buttons=Array.from($('palette').children);buttons.forEach((b,i)=>{b.dataset.paletteIndex=String(i);b.dataset.colourNumber=state.palette[i].hama;});buttons.sort((a,b)=>Number(a.dataset.colourNumber)-Number(b.dataset.colourNumber)).forEach(b=>$('palette').append(b));return result;};paletteUI();
  const eraser=document.querySelector('[data-tool="erase"]');eraser.textContent='Erase';eraser.title='Erase individual beads — click or drag (E)';eraser.classList.add('primary');eraser.onclick=()=>setTool('erase');document.querySelector('.toolbar').prepend(eraser);
  const button=document.createElement('button');button.id='newFromImage';button.textContent='New from image';$('newBtn').after(button);
  const blankButton=document.createElement('button');blankButton.textContent='Create from image';blankButton.onclick=()=>{$('newDialog').close();$('designImageFile').click();};$('newDialog').querySelector('.modalfooter').prepend(blankButton);
@@ -70,5 +71,5 @@ function beadOccupiedBounds(grid){let left=Infinity,top=Infinity,right=-1,bottom
  for(const id of ['imageDesignW','imageDesignH'])$(id).oninput=update;$('imageRemoveWhite').onchange=update;dialog.querySelectorAll('[data-image-size]').forEach(b=>b.onclick=()=>{$('imageDesignW').value=b.dataset.imageSize;$('imageDesignH').value=b.dataset.imageSize;update();});$('imageDesignCancel').onclick=()=>dialog.close();
  $('imageReferenceOnly').onclick=()=>{snapshot();state.reference=reference;refresh();dialog.close();notice('Reference image updated.');};
  $('imageDesignApply').onclick=()=>{if(!preview)return;try{if(state.grid.some(r=>r.some(v=>v!==null))){const saved=projects(),original=clone(state);original.projectId=original.projectId||crypto.randomUUID();saved[original.projectId]=original;localStorage.setItem(STORAGE+'-projects',JSON.stringify(saved));}load({...preview,title:name,reference:selectedReference(),projectId:crypto.randomUUID()});projectList();dialog.close();notice('Bead design created from your image. You can now paint, erase or resize it.');}catch(e){$('imageDesignMessage').textContent=e.message;}};
- document.querySelector('.brand .sub').textContent='Version 19 · Colour highlights & zoom';
+ document.querySelector('.brand .sub').textContent='Version 20 · Colours sorted by number';
 })();
