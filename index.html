@@ -38,7 +38,7 @@ async function unzipApp(buffer){
     if(!response.ok)throw Error('Could not download the editor ('+response.status+').');
     const html=await unzipApp(await response.arrayBuffer());
     const expanded=html.replace(/>150/g,'>300').replace(/max="150"/g,'max="300"').replace('between 1 and 150','between 1 and 300');
-    const updated=expanded.replace("</body>", '<script src="./inventory.js?v=9"><\/script><script src="./resize.js?v=19"><\/script><script src="./from-image.js?v=23"><\/script></body>');
+    const updated=expanded.replace("</body>", '<script src="./inventory.js?v=9"><\/script><script src="./resize.js?v=19"><\/script><script src="./from-image.js?v=24"><\/script></body>');
     document.open();document.write(updated);document.close();
   }catch(error){
     document.getElementById('status').textContent='Could not open the editor: '+error.message+' Try refreshing in an up-to-date browser.';
